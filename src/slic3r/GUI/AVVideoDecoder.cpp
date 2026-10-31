@@ -1,6 +1,7 @@
 #include "AVVideoDecoder.hpp"
 
 #include <assert.h>
+#include <cstring>
 
 extern "C"
 {
@@ -134,11 +135,16 @@ bool AVVideoDecoder::toWxImage(wxImage &image, wxSize const &size2)
     if (result_h != size.GetHeight()) {
         return false;
     }
-    image = wxImage(size.GetWidth(), size.GetHeight(), bits_.data(), true);
-    if (!image.IsOk()) {
+    // static_data=true would alias bits_. The decoder thread reuses that
+    // buffer for the next frame, and the GUI thread paints the queued image.
+    // A resize frees the old allocation and the paint memcpy faults.
+    wxImage owned(size.GetWidth(), size.GetHeight(), false);
+    if (!owned.IsOk() || owned.GetData() == nullptr) {
         fprintf(stderr, "AVVideoDecoder: image not ok %dx%d\n", size.GetWidth(), size.GetHeight());
         return false;
     }
+    memcpy(owned.GetData(), bits_.data(), static_cast<size_t>(length));
+    image = owned;
     return true;
 }
 
