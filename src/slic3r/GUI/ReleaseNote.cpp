@@ -2076,7 +2076,9 @@ void InputIpAddressDialog::workerThreadFunc(std::string str_ip, std::string str_
     }
 
     if (detectData.connect_type != "farm") {
-        if (detectData.bind_state == "occupied") {
+        // Open Bamboo Networking: see the note in GUI_App.cpp - "occupied_obn"
+        // is OBN's seeded-local marker that must pass this check.
+        if (detectData.bind_state == "occupied" || detectData.bind_state == "occupied_obn") {
             post_update_test_msg(w, wxEmptyString, true);
             post_update_test_msg(w, _L("The printer has already been bound."), false);
             return;

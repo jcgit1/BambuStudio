@@ -15,6 +15,7 @@
 #include "slic3r/GUI/DeviceManager.hpp"
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
+#include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
 #include "slic3r/GUI/DeviceWeb/DeviceWebPage.hpp"
 #include "slic3r/Utils/BBLUtil.hpp"
@@ -879,6 +880,17 @@ namespace Slic3r
         if (result == 0) {
             Slic3r::GUI::wxGetApp().CallAfter([this, body]() {
                 parse_user_print_info(body);
+                // OBN fix: with the cloud MQTT blocked, the only trigger for
+                // this function is the fake server_connected callback, which
+                // runs *before* the list exists. Tell the GUI a refresh is due
+                // once the list actually has entries (same event a real
+                // cloud-driven refresh would produce).
+                if (!userMachineList.empty()) {
+                    Slic3r::GUI::wxGetApp().CallAfter([]() {
+                        Slic3r::GUI::wxGetApp().sidebar().update_sync_status(nullptr);
+                        Slic3r::GUI::wxGetApp().sidebar().load_ams_list(nullptr);
+                    });
+                }
             });
         }
     }

@@ -2104,7 +2104,14 @@ void GUI_App::init_networking_callbacks()
                     sync_left_server_connect_status();
                     BOOST_LOG_TRIVIAL(trace) << "static: server connected";
                     m_agent->set_user_selected_machine(m_agent->get_user_selected_machine());
-                    if (this->is_enable_multi_machine()) {
+                    // OBN fix: the machine list arrives over HTTP (/user/print),
+                    // not MQTT, so it is independent of the cloud-MQTT gate this
+                    // callback represents. Upstream only refreshes it when the
+                    // multi-machine config option is on; with the cloud MQTT
+                    // blocked by OBN this callback is the only trigger we get,
+                    // so always fire it. Without this the printer list stays
+                    // empty when block_cloud=1.
+                    {
                         auto evt = new wxCommandEvent(EVT_UPDATE_MACHINE_LIST);
                         wxQueueEvent(this, evt);
                     }
@@ -8478,7 +8485,12 @@ static void sLocalBindFunc(std::string str_ip,
     }
 
     if (detectData.connect_type != "farm") {
-        if (detectData.bind_state == "occupied") {
+        // Open Bamboo Networking: a printer that is bound to Bambu Cloud but
+        // reachable over LAN MQTT (bblp + access code) is exactly what the
+        // "Bind with Access Code" flow is for. OBN sets bind_state to
+        // "occupied_obn" for its seeded local entries so this check passes;
+        // the stock plugin never emits that value, so behavior is unchanged.
+        if (detectData.bind_state == "occupied" || detectData.bind_state == "occupied_obn") {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": the device is already occupied";
             wxGetApp().CallAfter([sn]() { wxGetApp().app_config->erase("user_access_dev_ip", sn);});
             return;
