@@ -1,0 +1,3 @@
+# CachyOS is Arch-based and has no rpm/dpkg database for the Fedora/Debian checks.
+FOUND_GTK3=$(pkg-config --modversion gtk+-3.0 2>/dev/null || true)
+FOUND_GTK3_DEV="${FOUND_GTK3}"
