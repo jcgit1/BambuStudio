@@ -761,7 +761,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     FIND_LIBRARY(WAYLAND_EGL_LIBRARIES    NAMES wayland-egl)
     FIND_LIBRARY(WAYLAND_CLIENT_LIBRARIES NAMES wayland-client)
     find_package(CURL REQUIRED)
-    target_link_libraries(libslic3r_gui ${DBUS_LIBRARIES} OSMesa)
+    target_link_libraries(libslic3r_gui ${DBUS_LIBRARIES})
     target_link_libraries(libslic3r_gui
         OpenGL::EGL
         ${WAYLAND_SERVER_LIBRARIES}
@@ -779,7 +779,10 @@ if (SLIC3R_STATIC)
     target_compile_definitions(libslic3r_gui PUBLIC -DwxDEBUG_LEVEL=0)
 endif()
 
-if (SLIC3R_STATIC AND NOT SLIC3R_STATIC_EXCLUDE_CURL AND UNIX AND NOT APPLE)
+if (SLIC3R_STATIC AND NOT SLIC3R_STATIC_EXCLUDE_CURL AND UNIX AND NOT APPLE AND NOT SLIC3R_USE_SYSTEM_OPENSSL)
+    # OPENSSL_CERT_OVERRIDE bakes the deps-tree OpenSSL 1.1 cert paths into
+    # tls_system_cert_store(); wrong when linking against system OpenSSL 3/4
+    # (the Open Bamboo Networking configuration). See OBN issue #110.
     target_compile_definitions(libslic3r_gui PRIVATE OPENSSL_CERT_OVERRIDE)
 endif ()
 
