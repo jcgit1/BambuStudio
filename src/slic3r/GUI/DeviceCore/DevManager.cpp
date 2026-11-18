@@ -295,6 +295,16 @@ namespace Slic3r
     {
         MachineObject* obj;
         obj = new MachineObject(this, m_agent, dev_name, dev_id, dev_ip);
+        // OBN fix: OBN's bind_detect cannot run its TCP probe on a cloud-bound
+        // printer (the :3000 frame is refused), so it reports
+        // connect_type=="cloud" with bind_state "occupied_obn". Studio would
+        // then create a *cloud* MachineObject: is_lan_mode_printer() false ->
+        // MediaPlayCtrl builds no bambu:///local/ camera URL and the LAN
+        // nozzle-mapping path (which needs the local MQTT client bound to this
+        // object) never engages. A device inserted through the bind dialog is
+        // by definition the LAN device, so force the lan connection type.
+        if (connection_type == "cloud" && bind_state == "occupied_obn")
+            connection_type = "lan";
         if (printer_type.empty())
             obj->printer_type = _parse_printer_type("C11");
         else
